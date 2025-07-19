@@ -38,6 +38,7 @@
 		"jszip": "^3.10.1",
 		"nanoid": "^5.1.5",
 		"svelte-dnd-action": "^0.9.63",
+		"svelte-motion": "^0.12.2",
 		"three": "^0.178.0"
 	}
 }

@@ -2,11 +2,16 @@
   import { blocks, selectedBlockId } from '$lib/stores';
   import type { Block } from '$lib/stores';
   import { dndzone } from 'svelte-dnd-action';
+
+  // Importamos TODOS os blocos, incluindo os novos
   import Header from '$lib/components/blocos/Header.svelte';
   import ProfileCard from '$lib/components/blocos/ProfileCard.svelte';
   import LinkList from '$lib/components/blocos/LinkList.svelte';
+  import RichText from '$lib/components/blocos/RichText.svelte';
+  import ImageBlock from '$lib/components/blocos/ImageBlock.svelte';
 
-  const componentMap = { Header, ProfileCard, LinkList };
+  // Adicionamos os novos blocos ao mapa de componentes
+  const componentMap = { Header, ProfileCard, LinkList, RichText, ImageBlock };
 
   function handleDndUpdate(event: CustomEvent<{ items: Block[], info: any }>) {
     blocks.set(event.detail.items);
@@ -29,10 +34,9 @@
   {/if}
 </div>
 <style>
-  .canvas-container { padding: 2rem; background-color: #e5e7eb; min-height: 100%; }
+  .canvas-container { padding: 2rem; min-height: 100%; box-sizing: border-box; }
   .block-wrapper { margin-bottom: 1.5rem; cursor: grab; border-radius: 4px; transition: all 0.2s ease-in-out; outline: 3px solid transparent; }
   .block-wrapper.selected { outline-color: #4f46e5; box-shadow: 0 0 25px rgba(79, 70, 229, 0.4); }
-  .block-wrapper:global(.dnd-ghost) { cursor: grabbing; background-color: rgba(255, 255, 255, 0.5); outline: 2px dashed #4f46e5; }
-  .block-wrapper:global(.dnd-dropzone-occupied) { background-color: rgba(139, 92, 246, 0.2); }
+  .dnd-wrapper { padding-bottom: 20vh; } /* Adiciona espaço no final para o drop */
   .empty-canvas-message { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 80vh; border: 2px dashed #9ca3af; border-radius: 1rem; color: #6b7280; text-align: center; }
 </style>

@@ -1,66 +1,60 @@
-import { writable } from 'svelte/store';
-import { nanoid } from 'nanoid'; // Uma biblioteca minúscula para gerar IDs únicos
+import { writable, type Writable } from 'svelte/store';
+import { nanoid } from 'nanoid';
+import { browser } from '$app/environment';
 
-// --- A Planta de um Bloco ---
-// Define a estrutura de cada peça de LEGO no nosso sistema.
 export interface Block {
-  id: string; // ID único para cada bloco (Header1, ProfileCard2, etc.)
-  type: 'Header' | 'ProfileCard' | 'LinkList'; // O tipo do bloco
-  props: any; // As propriedades específicas daquele bloco (título, cor, etc.)
+  id: string;
+  type: 'Header' | 'ProfileCard' | 'LinkList' | 'RichText' | 'ImageBlock';
+  props: any;
 }
 
-// --- O Cérebro ---
-// Criamos um 'writable store', que é uma caixa reativa onde guardaremos nossa lista de blocos.
-// Qualquer parte da nossa aplicação pode 'ouvir' as mudanças nesta caixa.
-// O <Block[]> diz que a caixa só pode conter um array de Blocos.
-export const blocks = writable<Block[]>([]);
+export interface GlobalStyles {
+  fontFamily: 'Roboto' | 'Montserrat' | 'Lora';
+}
 
-// --- Funções para Manipular o Cérebro ---
+const storage = browser ? window.sessionStorage : null;
+function createPersistentStore<T>(key: string, startValue: T): Writable<T> {
+  const { subscribe, set, update } = writable<T>(startValue);
+  if (browser) {
+    const json = storage?.getItem(key);
+    if (json) { set(JSON.parse(json)); }
+    subscribe((current) => { storage?.setItem(key, JSON.stringify(current)); });
+  }
+  return { subscribe, set, update };
+}
 
-// Adiciona um novo bloco à nossa tela de pintura
+export const blocks = createPersistentStore<Block[]>('blocks', []);
+export const selectedBlockId = createPersistentStore<string | null>('selectedBlockId', null);
+export const activeTemplate = createPersistentStore<'card' | 'landing' | null>('activeTemplate', null);
+export const globalStyles = createPersistentStore<GlobalStyles>('globalStyles', { fontFamily: 'Roboto' });
+
+export function resetBlocks() {
+  blocks.set([]);
+  selectedBlockId.set(null);
+  globalStyles.set({ fontFamily: 'Roboto' });
+}
+
 export function addBlock(type: Block['type']) {
-  const newBlock: Block = {
-    id: nanoid(), // Gera um ID aleatório como 'V1StGXR8_Z5jdHi6B-myT'
-    type: type,
-    props: getInitialProps(type)
-  };
-
-  // O método 'update' do store nos permite alterar o valor dentro da caixa
-  blocks.update(currentBlocks => {
-    return [...currentBlocks, newBlock]; // Adiciona o novo bloco ao final da lista
-  });
+  const newBlock: Block = { id: nanoid(), type: type, props: getInitialProps(type) };
+  blocks.update(currentBlocks => [...currentBlocks, newBlock]);
 }
 
-// Retorna as propriedades iniciais para cada tipo de bloco
+// --- ALTERAÇÃO: A função 'removeBlock' foi apagada daqui ---
+
 function getInitialProps(type: Block['type']) {
   switch (type) {
-    case 'Header':
-      return {
-        titulo: 'Título Lendário',
-        corDeFundo: '#000000',
-        corDoTexto: '#FFFFFF',
-        tamanhoDaFonte: 3
-      };
+    case 'Header': return { titulo: 'Título da Página', corDeFundo: '#1f2937', corDoTexto: '#ffffff', tamanhoDaFonte: 3, geometry: { width: 8, depth: 2, height: 'plate' } };
     case 'ProfileCard':
       return {
-        imageUrl: 'https://placehold.co/128x128/111827/ffffff?text=Lenda',
+        imageUrl: 'https://placehold.co/128x128/e0e7ff/3730a3?text=Eu',
         nome: 'Seu Nome',
-        bio: 'Construindo o futuro.'
+        bio: 'Uma biografia concisa e impactante.',
+        geometry: { width: 4, depth: 4, height: 'brick' },
+        styleVariant: 'top'
       };
-    case 'LinkList':
-      return {
-        links: [
-          { text: 'Visão', url: '#' },
-          { text: 'Engenharia', url: '#' }
-        ]
-      };
-    default:
-      return {};
+    case 'LinkList': return { links: [ { text: 'Link Principal', url: '#' } ], geometry: { width: 6, depth: 2, height: 'brick' } };
+    case 'RichText': return { titulo: 'Seção de Destaque', texto: 'Descreva aqui os benefícios do seu produto...', geometry: { width: 6, depth: 4, height: 'brick' } };
+    case 'ImageBlock': return { imageUrl: 'https://placehold.co/800x450/cccccc/444444?text=Imagem', legenda: 'Uma legenda descritiva.', geometry: { width: 8, depth: 4, height: 'plate' } };
+    default: return {};
   }
 }
-// ... (todo o código anterior)
-
-// Nova memória para guardar o ID do bloco que está selecionado
-export const selectedBlockId = writable<string | null>(null);
-// Precisamos instalar o nanoid para gerar os IDs
-// npm install nanoid
