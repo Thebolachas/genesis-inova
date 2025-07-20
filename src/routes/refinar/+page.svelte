@@ -2,22 +2,18 @@
   import Canvas from '$lib/components/Canvas.svelte';
   import PropertiesPanel from '$lib/components/PropertiesPanel.svelte';
   import ActionBar from '$lib/components/ActionBar.svelte';
-  import { blocks, globalStyles } from '$lib/stores'; // 1. Importamos a store de estilos globais
-  import { onMount } from 'svelte';
+  // 1. IMPORTAMOS O NOSSO NOVO COMPONENTE
+  import TimeMaestro from '$lib/components/TimeMaestro.svelte'; 
+  import { globalStyles } from '$lib/stores';
 
-  // 2. Criamos um mapa para os nomes CSS das fontes
   const fontFamilies = {
     Roboto: "'Roboto', sans-serif",
     Montserrat: "'Montserrat', sans-serif",
     Lora: "'Lora', serif",
   }
 
-  onMount(() => {
-    const savedBlocks = sessionStorage.getItem('blocks');
-    if (savedBlocks) {
-      blocks.set(JSON.parse(savedBlocks));
-    }
-  });
+  // A lógica onMount para carregar do sessionStorage já não é necessária aqui,
+  // pois a nossa store persistente já trata disso automaticamente.
 </script>
 
 <svelte:head>
@@ -40,25 +36,34 @@
       <PropertiesPanel />
     </aside>
   </div>
+
+  <TimeMaestro />
 </div>
 
 <style>
   .page-wrapper { 
-    display: flex; 
+    display: flex;
     flex-direction: column; 
+    /* 3. AJUSTAMOS A ALTURA PARA DEIXAR ESPAÇO PARA O MAESTRO */
     height: 100vh; 
     width: 100vw; 
     overflow: hidden; 
-    /* Adicionamos uma transição suave para a mudança de fonte */
+    box-sizing: border-box;
     transition: font-family 0.3s ease;
   }
   .refinement-layout { 
     display: grid; 
     grid-template-columns: 1fr 350px; 
     flex-grow: 1; 
-    overflow: hidden; 
+    overflow: hidden;
+    /* A altura é calculada para preencher o espaço restante */
+    height: calc(100% - 60px); /* 60px é a altura da ActionBar */
   }
   .canvas-area, .properties-panel { 
-    overflow-y: auto; 
+    overflow-y: auto;
+    height: 100%;
+    /* Adiciona padding na parte inferior para garantir que o Maestro não cubra o conteúdo */
+    padding-bottom: 70px; /* Um pouco mais que a altura do Maestro */
+    box-sizing: border-box;
   }
 </style>

@@ -1,33 +1,44 @@
 <script lang="ts">
-  import { blocks, selectedBlockId, globalStyles } from '$lib/stores';
+  import { blocks, selectedBlockId, globalStyles, removeBlock, addImageFile, updateBlockProps } from '$lib/stores';
   import { derived } from 'svelte/store';
 
   const selectedBlock = derived(
     [blocks, selectedBlockId],
     ([$blocks, $selectedBlockId]) => $blocks.find(b => b.id === $selectedBlockId)
   );
+
   const selectedBlockIndex = derived(
     [blocks, selectedBlockId],
     ([$blocks, $selectedBlockId]) => $blocks.findIndex(b => b.id === $selectedBlockId)
   );
 
-  function addLink() { if ($selectedBlockIndex === -1) return; $blocks[$selectedBlockIndex].props.links.push({ text: 'Novo Link', url: '#' }); blocks.set($blocks); }
-  function removeLink(index: number) { if ($selectedBlockIndex === -1) return; $blocks[$selectedBlockIndex].props.links.splice(index, 1); blocks.set($blocks); }
+  function addLink() {
+    if (!$selectedBlock) return;
+    const newLinks = [...$selectedBlock.props.links, { text: 'Novo Link', url: '#' }];
+    updateBlockProps($selectedBlock.id, { links: newLinks });
+  }
 
-  // --- NOVA FUNÇÃO PARA UPLOAD DE IMAGEM ---
-  function handleImageUpload(event: Event, propName: 'imageUrl') {
+  function removeLink(index: number) {
+    if (!$selectedBlock) return;
+    const newLinks = [...$selectedBlock.props.links];
+    newLinks.splice(index, 1);
+    updateBlockProps($selectedBlock.id, { links: newLinks });
+  }
+
+  /**
+   * SUGESTÃO 2: NOVA FUNÇÃO PARA UPLOAD DE IMAGEM
+   * - Não usa mais Base64.
+   * - Adiciona o ficheiro à 'imageFiles' store.
+   * - Cria uma URL temporária para a pré-visualização.
+   * - Atualiza a prop 'imageUrl' do bloco com essa URL temporária.
+   */
+  function handleImageUpload(event: Event, blockId: string) {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0] && $selectedBlockIndex !== -1) {
+    if (input.files && input.files[0]) {
       const file = input.files[0];
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        // Quando a imagem é lida, o resultado (em Base64) é colocado na prop 'imageUrl'
-        $blocks[$selectedBlockIndex].props[propName] = e.target?.result as string;
-        blocks.set($blocks); // Força a atualização do Cérebro
-      };
-      
-      reader.readAsDataURL(file);
+      addImageFile(blockId, file);
+      const tempUrl = URL.createObjectURL(file);
+      updateBlockProps(blockId, { imageUrl: tempUrl });
     }
   }
 </script>
@@ -49,7 +60,7 @@
       {#if $selectedBlock.type === 'ProfileCard'}
         <div class="controle">
           <label for="card-imagem">Imagem de Perfil</label>
-          <input id="card-imagem" type="file" accept="image/*" on:change={(e) => handleImageUpload(e, 'imageUrl')}>
+          <input id="card-imagem" type="file" accept="image/*" on:change={(e) => handleImageUpload(e, $selectedBlock!.id)}>
         </div>
         <div class="controle"><label>Nome</label><input type="text" bind:value={$blocks[$selectedBlockIndex].props.nome}></div>
         <div class="controle"><label>Biografia</label><textarea rows="4" bind:value={$blocks[$selectedBlockIndex].props.bio}></textarea></div>
@@ -81,10 +92,16 @@
       {#if $selectedBlock.type === 'ImageBlock'}
         <div class="controle">
           <label for="image-block-imagem">Imagem de Destaque</label>
-          <input id="image-block-imagem" type="file" accept="image/*" on:change={(e) => handleImageUpload(e, 'imageUrl')}>
+          <input id="image-block-imagem" type="file" accept="image/*" on:change={(e) => handleImageUpload(e, $selectedBlock!.id)}>
         </div>
         <div class="controle"><label>Legenda</label><input type="text" bind:value={$blocks[$selectedBlockIndex].props.legenda}></div>
       {/if}
+
+      <div class="danger-zone">
+        <button class="remove-block-button" on:click={() => removeBlock($selectedBlock!.id)}>
+          Remover Bloco
+        </button>
+      </div>
     </div>
   {:else}
     <div class="no-selection">
@@ -126,9 +143,27 @@
   .variant-selector button { padding: 0.5rem; background-color: #ffffff; border: none; cursor: pointer; color: #4b5563; transition: background-color 0.2s; }
   .variant-selector button:first-child { border-right: 1px solid #d1d5db; }
   .variant-selector button.active { background-color: #e0e7ff; color: #4338ca; font-weight: bold; }
-  /* Estilo para o input de arquivo */
-  input[type="file"] {
-    border: 1px solid #d1d5db;
-    padding: 0.4rem;
+  input[type="file"] { border: 1px solid #d1d5db; padding: 0.4rem; }
+  
+  /* --- NOVO ESTILO PARA O BOTÃO DE REMOVER BLOCO --- */
+  .danger-zone {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  .remove-block-button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-radius: 0.375rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .remove-block-button:hover {
+    background-color: #fca5a5;
+    color: #7f1d1d;
   }
 </style>

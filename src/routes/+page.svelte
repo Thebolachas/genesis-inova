@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Canvas, T } from '@threlte/core';
   import { OrbitControls } from '@threlte/extras';
+
   // --- ALTERAÇÃO: 'removeBlock' foi removido da importação ---
   import { activeTemplate, resetBlocks, blocks, addBlock, selectedBlockId } from '$lib/stores';
   import LegoBrick from '$lib/components/visualizador/LegoBrick.svelte';
@@ -46,6 +47,7 @@
   $: showHead = $blocks.some(b => b.type === 'Header');
   $: showTorso = $blocks.some(b => b.type === 'ProfileCard');
   $: showLegs = $blocks.some(b => b.type === 'LinkList');
+
   const colorMap = { Header: 'royalblue', ProfileCard: 'crimson', LinkList: 'mediumseagreen', RichText: 'darkorange', ImageBlock: 'slateblue' };
   $: processedBlocks = (() => {
     if ($activeTemplate !== 'landing') return [];
@@ -80,25 +82,35 @@
         <T.Group position.x={3} position.y={-2 + $scrollProgress * 10} rotation.y={$scrollProgress * -3}>
           <LegoBrick geometry={{width: 3, depth: 2, height: 'brick'}} color="#0055BF" scale={1} id="s2" />
         </T.Group>
-          <T.Group position.y={-8 + $scrollProgress * 12} position.x={$scrollProgress * -5} rotation.x={$scrollProgress * 2}>
+
+        <T.Group position.y={-8 + $scrollProgress * 12} position.x={$scrollProgress * -5} rotation.x={$scrollProgress * 2}>
           <LegoHead color="#FFD700" />
         </T.Group>
 
         <T.Group position.z={-10 + $scrollProgress * 20} position.x={-5} rotation.z={$scrollProgress * 5}>
-            <LegoBrick geometry={{width: 3, depth: 2, height: 'brick'}} color="#f5c105" scale={0.8} id="s3" />
+          <LegoBrick geometry={{width: 3, depth: 2, height: 'brick'}} color="#f5c105" scale={0.8} id="s3" />
         </T.Group>
         <T.Group position.y={5 - $scrollProgress * 15} position.x={5} rotation.x={$scrollProgress * -4}>
-            <LegoBrick geometry={{width: 2, depth: 2, height: 'plate'}} color="#FFD700" scale={1.1} id="s4" />
+          <LegoBrick geometry={{width: 2, depth: 2, height: 'plate'}} color="#FFD700" scale={1.1} id="s4" />
         </T.Group>
+
         <T.Group position.y={-5 + $scrollProgress * 8} position.x={-6 + $scrollProgress * 12} rotation.y={$scrollProgress * 6}>
-            <LegoHead color="#FFD700" scale={0.7} />
+          <LegoHead color="#FFD700" scale={0.7} />
         </T.Group>
+
         <T.Group position.x={8} position.y={4 - $scrollProgress * 14} rotation.y={$scrollProgress * 2} rotation.z={$scrollProgress * -3}>
-            <LegoBrick geometry={{width: 6, depth: 2, height: 'plate'}} color="#0055BF" scale={0.9} id="s5" />
+          <LegoBrick geometry={{width: 6, depth: 2, height: 'plate'}} color="#0055BF" scale={0.9} id="s5" />
         </T.Group>
+
         <T.Group position.z={5 - $scrollProgress * 15} position.x={1} rotation.x={$scrollProgress * 3}>
-            <LegoBrick geometry={{width: 2, depth: 2, height: 'brick'}} color="#DA291C" scale={0.6} id="s6" />
+          <LegoBrick geometry={{width: 2, depth: 2, height: 'brick'}} color="#DA291C" scale={0.6} id="s6" />
         </T.Group>
+
+        {#if $scrollProgress > 0.5}
+          <T.Group position.y={-3 + $scrollProgress * 12} position.x={0} rotation.y={$scrollProgress * 6}>
+            <LegoMinifigure />
+          </T.Group>
+        {/if}
 
       </Canvas>
     </div>
@@ -117,6 +129,7 @@
       </div>
     {/if}
   </div>
+
 {:else if step === 'tesseract'}
   <div class="tesseract-container" in:fade>
     <aside class="palette">
@@ -135,14 +148,17 @@
           <button on:click={() => addBlock('LinkList')}>Adicionar Links</button>
         {/if}
       </div>
+
       {#if ($activeTemplate === 'card' && allBlocksAdded) || ($activeTemplate === 'landing' && $blocks.length > 0)}
         <a href="/refinar" class="wormhole-button">Explorar Criação</a>
       {/if}
     </aside>
+
     <Canvas>
       <T.Color attach="background" args={['#f0f0f0']} />
       <T.AmbientLight intensity={0.6} />
       <T.DirectionalLight position={[10, 10, 5]} intensity={2} />
+      
       {#if $activeTemplate === 'card'}
         <T.PerspectiveCamera makeDefault position={[0, 4, 8]}><OrbitControls /></T.PerspectiveCamera>
         <LegoMinifigure {showHead} {showTorso} {showLegs} />
