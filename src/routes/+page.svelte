@@ -1,8 +1,6 @@
 <script lang="ts">
   import { Canvas, T } from '@threlte/core';
   import { OrbitControls } from '@threlte/extras';
-
-  // --- ALTERAÇÃO: 'removeBlock' foi removido da importação ---
   import { activeTemplate, resetBlocks, blocks, addBlock, selectedBlockId } from '$lib/stores';
   import LegoBrick from '$lib/components/visualizador/LegoBrick.svelte';
   import LegoMinifigure from '$lib/components/visualizador/LegoMinifigure.svelte';
@@ -11,19 +9,22 @@
   import { onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
 
-  // --- ESTADO DA JORNADA DO USUÁRIO ---
   type Step = 'scrolling' | 'selection' | 'tesseract';
   let step: Step = 'scrolling';
 
-  // --- NOSSO MOTOR DE SCROLL MANUAL E ROBUSTO ---
   const scrollProgress = writable(0);
 
   onMount(() => {
+    const unsubscribe = activeTemplate.subscribe(value => {
+      if (value !== null) {
+        step = 'tesseract';
+      }
+    });
+
     const handleScroll = () => {
       const progress = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
-      scrollProgress.set(isNaN(progress) ? 0 : progress); // Previne NaN se a altura for 0
+      scrollProgress.set(isNaN(progress) ? 0 : progress);
 
-      // LÓGICA DE TRANSIÇÃO DE IDA E VOLTA
       if (progress > 0.98) {
         if (step === 'scrolling') step = 'selection';
       } else {
@@ -32,16 +33,22 @@
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      unsubscribe();
+    };
   });
 
-  // --- LÓGICA DE TRANSIÇÃO E DADOS (O restante que já conhecemos) ---
-  activeTemplate.subscribe(value => {
-    if (value !== null) step = 'tesseract';
-  });
+  function selectTemplate(template: 'card' | 'landing') { 
+    resetBlocks(); 
+    activeTemplate.set(template); 
+  }
 
-  function selectTemplate(template: 'card' | 'landing') { resetBlocks(); activeTemplate.set(template); }
-  function backToSelection() { step = 'selection'; activeTemplate.set(null); }
+  function backToSelection() { 
+    step = 'selection'; 
+    activeTemplate.set(null);
+  }
 
   const selectedBlock = derived([blocks, selectedBlockId], ([$blocks, $selectedBlockId]) => $blocks.find(b => b.id === $selectedBlockId));
   $: showHead = $blocks.some(b => b.type === 'Header');
@@ -68,7 +75,7 @@
 
 {#if step === 'scrolling' || step === 'selection'}
   <div class="intro-container">
-    <div style="height: 200vh;" />
+    <div style="height: 200vh;"></div>
 
     <div class="scroll-canvas-wrapper" style="opacity: {step === 'scrolling' ? 1 : 0};">
       <Canvas>
@@ -82,26 +89,21 @@
         <T.Group position.x={3} position.y={-2 + $scrollProgress * 10} rotation.y={$scrollProgress * -3}>
           <LegoBrick geometry={{width: 3, depth: 2, height: 'brick'}} color="#0055BF" scale={1} id="s2" />
         </T.Group>
-
         <T.Group position.y={-8 + $scrollProgress * 12} position.x={$scrollProgress * -5} rotation.x={$scrollProgress * 2}>
           <LegoHead color="#FFD700" />
         </T.Group>
-
         <T.Group position.z={-10 + $scrollProgress * 20} position.x={-5} rotation.z={$scrollProgress * 5}>
           <LegoBrick geometry={{width: 3, depth: 2, height: 'brick'}} color="#f5c105" scale={0.8} id="s3" />
         </T.Group>
         <T.Group position.y={5 - $scrollProgress * 15} position.x={5} rotation.x={$scrollProgress * -4}>
           <LegoBrick geometry={{width: 2, depth: 2, height: 'plate'}} color="#FFD700" scale={1.1} id="s4" />
         </T.Group>
-
         <T.Group position.y={-5 + $scrollProgress * 8} position.x={-6 + $scrollProgress * 12} rotation.y={$scrollProgress * 6}>
           <LegoHead color="#FFD700" scale={0.7} />
         </T.Group>
-
         <T.Group position.x={8} position.y={4 - $scrollProgress * 14} rotation.y={$scrollProgress * 2} rotation.z={$scrollProgress * -3}>
           <LegoBrick geometry={{width: 6, depth: 2, height: 'plate'}} color="#0055BF" scale={0.9} id="s5" />
         </T.Group>
-
         <T.Group position.z={5 - $scrollProgress * 15} position.x={1} rotation.x={$scrollProgress * 3}>
           <LegoBrick geometry={{width: 2, depth: 2, height: 'brick'}} color="#DA291C" scale={0.6} id="s6" />
         </T.Group>
@@ -111,7 +113,6 @@
             <LegoMinifigure />
           </T.Group>
         {/if}
-
       </Canvas>
     </div>
 
@@ -184,12 +185,9 @@
   .card { background: white; padding: 2.5rem; border: 1px solid #e5e7eb; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); cursor: pointer; width: 280px; text-align: center; transition: all 0.2s ease-in-out; }
   .card:hover { transform: translateY(-10px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
   .card h2 { margin: 0 0 0.5rem 0; }
-  .card span { color: #8ca2ce; }
   .tesseract-container { position: relative; height: 100vh; width: 100vw; }
   .palette { position: absolute; top: 1.5rem; left: 1.5rem; z-index: 10; background-color: rgba(31, 41, 55, 0.9); color: #f9fafb; padding: 1.5rem; border-radius: 0.75rem; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
   .back-button { background: none; border: none; color: #9ca3af; font-size: 0.9rem; cursor: pointer; padding: 0 0 1rem 0; width: 100%; text-align: left; border-bottom: 1px solid #4b5563; margin-bottom: 1rem; }
-  .selection-controls { background-color: rgba(255,255,255,0.1); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; text-align: center; }
-  .remove-button { background-color: #ef4444; width: 100%; color: white; border: none; padding: 0.75rem; border-radius: 0.375rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
   .palette-title { margin: 0 0 1rem 0; padding-bottom: 1rem; border-bottom: 1px solid #4b5563; }
   .palette-buttons { display: flex; flex-direction: column; gap: 1rem; }
   .palette-buttons button { background-color: #4b5563; color: #f9fafb; border: none; padding: 0.75rem 1rem; border-radius: 0.375rem; text-align: left; font-size: 1rem; cursor: pointer; transition: background-color 0.2s; }

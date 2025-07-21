@@ -33,7 +33,8 @@
     color: #ffffff;
     
     border: none;
-    border-radius: 5px; /* Bordas levemente arredondadas */
+    border-radius: 5px;
+    /* Bordas levemente arredondadas */
     
     font-weight: bold;
     font-size: 1rem;
@@ -62,7 +63,8 @@
   /* Os pinos de encaixe */
   .stud {
     position: absolute;
-    top: 5px; /* Distância do topo */
+    top: 5px;
+    /* Distância do topo */
     width: 15px;
     height: 15px;
     background-color: #f7b900;
@@ -71,12 +73,14 @@
   }
   
   /* Posicionamento dos 4 pinos de uma peça 2x4 */
-  .stud:nth-child(1) { left: 18px; }
+  .stud:nth-child(1) { left: 18px;
+  }
   .stud:nth-child(2) { right: 18px; }
 
   /* O texto do botão */
   .button-text {
-    position: relative; /* Garante que o texto fique acima dos pinos */
+    position: relative;
+    /* Garante que o texto fique acima dos pinos */
     z-index: 1;
   }
 </style>
