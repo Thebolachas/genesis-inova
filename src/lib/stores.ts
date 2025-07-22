@@ -198,3 +198,22 @@ export function handleImageUpload(event: Event, blockId: string) {
 export function handleDndUpdate(event: CustomEvent<{ items: Block[], info: any }>) {
     blocksWithHistory.set(event.detail.items);
 }
+
+// Utilities para análise do histórico
+export function getHistoryDiff(stateA: Block[], stateB: Block[]) {
+  const addedBlocks = stateB.filter(b => !stateA.some(a => a.id === b.id));
+  const removedBlocks = stateA.filter(a => !stateB.some(b => b.id === a.id));
+  const modifiedBlocks = stateB.filter(b => {
+    const original = stateA.find(a => a.id === b.id);
+    return original && !dequal(original.props, b.props);
+  });
+  
+  return { addedBlocks, removedBlocks, modifiedBlocks };
+}
+
+export function getBlockTypeStats(blocks: Block[]) {
+  return blocks.reduce((stats, block) => {
+    stats[block.type] = (stats[block.type] || 0) + 1;
+    return stats;
+  }, {} as Record<Block['type'], number>);
+}

@@ -4,13 +4,13 @@
   import { derived } from 'svelte/store';
   import { fade } from 'svelte/transition';
   import { browser } from '$app/environment';
-  import { onDestroy } from 'svelte'; // Importar onDestroy
+  import { onDestroy } from 'svelte';
 
   let popoverElement: HTMLDivElement;
   let top = 0;
   let left = 0;
   let isEditing = false;
-  let currentTargetElement: HTMLElement | null = null; // Para manter referência do elemento atual
+  let currentTargetElement: HTMLElement | null = null;
 
   const activeBlock = derived(
     [blocks, popoverState],
@@ -36,33 +36,27 @@
 
   // Efeito reativo para gerenciar o targetElement e seus listeners
   $: {
-    // Quando o popoverState.targetElement muda
     if ($popoverState.targetElement !== currentTargetElement) {
-      // Remove listeners do elemento anterior, se houver
       removeEventListeners(currentTargetElement);
-      // Atualiza o elemento atual
       currentTargetElement = $popoverState.targetElement;
-      // Adiciona listeners ao novo elemento
       if (currentTargetElement) {
         addEventListeners(currentTargetElement);
-        // Se o novo target já estiver focado, define isEditing como true
         if (document.activeElement === currentTargetElement) {
             isEditing = true;
         } else {
-            isEditing = false; // Garante que isEditing esteja false ao mudar de target, se não estiver focado
+            isEditing = false;
         }
       } else {
-        isEditing = false; // Se não há targetElement, não está editando
+        isEditing = false;
       }
     }
 
-    // Lógica de posicionamento (já estava boa, só garantindo que esteja aqui)
     if ($popoverState.visible && currentTargetElement && browser) {
       const rect = currentTargetElement.getBoundingClientRect();
-      top = rect.top + window.scrollY - 90; // Ajustado de 70 para 90 (você pode ajustar este valor)
+      top = rect.top + window.scrollY - 90;
       left = rect.left + window.scrollX + rect.width / 2;
     } else {
-      isEditing = false; // Se o popover não está visível, não estamos editando
+      isEditing = false;
     }
   }
 
@@ -71,8 +65,6 @@
   }
 
   function handleBlur() {
-    // Pequeno delay para permitir cliques nos botões do popover antes de esconder
-    // Verifica se o foco saiu do elemento editável E não foi para o próprio popover
     setTimeout(() => {
       if (currentTargetElement && !currentTargetElement.contains(document.activeElement) && !popoverElement.contains(document.activeElement)) {
         isEditing = false;
@@ -80,7 +72,6 @@
     }, 50);
   }
 
-  // Garante que os listeners sejam removidos quando o componente é destruído
   onDestroy(() => {
     removeEventListeners(currentTargetElement);
   });
@@ -105,12 +96,37 @@
     }
   }
 
+  // FUNÇÃO CORRIGIDA - Esta é a causa do bug!
   function insertEmoji(emoji: string) {
-    if (currentTargetElement) { // Usar currentTargetElement
+    if (currentTargetElement) {
       const el = currentTargetElement;
       el.focus();
-      document.execCommand('insertText', false, emoji);
-      el.dispatchEvent(new Event('input', { bubbles: true })); // Simula um evento de input
+      
+      // CORREÇÃO: Use apenas UM método para inserir texto
+      // Opção 1: Usar apenas document.execCommand (sem dispatchEvent)
+      if (document.execCommand) {
+        document.execCommand('insertText', false, emoji);
+      } else {
+        // Opção 2: Fallback para navegadores que não suportam execCommand
+        // Inserir texto na posição do cursor manualmente
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          range.deleteContents();
+          const textNode = document.createTextNode(emoji);
+          range.insertNode(textNode);
+          range.setStartAfter(textNode);
+          range.setEndAfter(textNode);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          // Se não há seleção, adiciona no final
+          el.textContent += emoji;
+        }
+        
+        // Só dispara o evento de input se usamos o fallback
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     }
   }
 
@@ -182,7 +198,6 @@
   opacity: 0.5;
 }
 
-/* Restante do seu CSS para o popover */
 .font-select { background: #3f3f3f; color: white; border: 1px solid #525252; border-radius: 4px; padding: 4px 8px; }
 .size-control { display: flex; align-items: center; background: #3f3f3f; border: 1px solid #525252; border-radius: 4px; }
 .size-control input { width: 40px; background: transparent; color: white; border: none; padding: 4px; -moz-appearance: textfield; }
