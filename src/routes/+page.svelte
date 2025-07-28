@@ -1,27 +1,24 @@
 <script lang="ts">
   import { Canvas, T } from '@threlte/core';
   import { OrbitControls } from '@threlte/extras';
-  import { activeTemplate, resetBlocks, blocks, addBlock, selectedBlockId } from '$lib/stores';
+  // ✅ NOVO: Importar a store 'hasDownloaded' que criamos
+  import { activeTemplate, resetBlocks, blocks, addBlock, selectedBlockId, hasDownloaded } from '$lib/stores';
   import LegoBrick from '$lib/components/visualizador/LegoBrick.svelte';
   import LegoMinifigure from '$lib/components/visualizador/LegoMinifigure.svelte';
   import LegoHead from '$lib/components/visualizador/LegoHead.svelte';
   import { derived, writable } from 'svelte/store';
-  import { onMount, tick } from 'svelte'; // Importar 'tick' para um loop de animação
+  import { onMount, tick } from 'svelte';
   import { fade, fly } from 'svelte/transition';
-
+  
   type Step = 'scrolling' | 'selection' | 'tesseract';
   let step: Step = 'scrolling';
 
   const scrollProgress = writable(0);
-
-  // Variável para controlar o tempo para animações contínuas
   let currentTime = 0;
-
-  // Função para atualizar o tempo em cada frame
   let animationFrameId: number;
+  
   const animate = () => {
-    currentTime += 0.01; // Velocidade da animação
-    // Você pode adicionar mais lógica aqui se precisar de algo complexo
+    currentTime += 0.01;
     animationFrameId = requestAnimationFrame(animate);
   };
 
@@ -44,20 +41,18 @@
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    
-    // Iniciar a animação contínua
     animationFrameId = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       unsubscribe();
-      cancelAnimationFrame(animationFrameId); // Parar a animação ao desmontar
+      cancelAnimationFrame(animationFrameId);
     };
   });
 
   function selectTemplate(template: 'card' | 'landing') { 
     resetBlocks(); 
-    activeTemplate.set(template); 
+    activeTemplate.set(template);
   }
 
   function backToSelection() { 
@@ -92,7 +87,6 @@
   <div class="intro-container">
     <div style="height: 200vh;"></div>
 
-    <!-- 🆕 CANVAS COM LEGO VOANDO DURANTE TODO O SCROLL - Storytelling Contínuo -->
     <div 
       class="scroll-canvas-wrapper" 
       class:selection-mode={step === 'selection'}
@@ -103,7 +97,6 @@
         <T.AmbientLight intensity={0.5} />
         <T.DirectionalLight position={[10, 10, 5]} intensity={2} />
 
-        <!-- 🆕 BLOCO 1 - Movimento contínuo + resposta ao scroll -->
         <T.Group 
           position.x={-2 + Math.sin(currentTime * 0.5) * 0.8} 
           rotation.y={$scrollProgress * 6 + currentTime * 0.3} 
@@ -113,8 +106,7 @@
           <LegoBrick geometry={{width: 4, depth: 2, height: 'brick'}} color="#DA291C" scale={1.2} id="s1" />
         </T.Group>
 
-        <!-- 🆕 BLOCO 2 - Trajetória diagonal dinâmica -->
-        <T.Group 
+       <T.Group 
           position.x={3 + Math.cos(currentTime * 0.4) * 0.8} 
           position.y={-2 + $scrollProgress * 15 + Math.sin(currentTime * 0.6) * 0.6} 
           rotation.y={$scrollProgress * -4 + currentTime * 0.4}
@@ -123,17 +115,15 @@
           <LegoBrick geometry={{width: 3, depth: 2, height: 'brick'}} color="#0055BF" scale={1} id="s2" />
         </T.Group>
 
-        <!-- 🆕 CABEÇA LEGO - Movimento em espiral -->
         <T.Group 
           position.y={-8 + $scrollProgress * 16 + Math.cos(currentTime * 0.8) * 0.7} 
           position.x={$scrollProgress * -6 + Math.sin(currentTime * 0.3) * 1.0} 
           rotation.x={$scrollProgress * 3 + currentTime * 0.2}
-          position.z={Math.cos($scrollProgress * 4 + currentTime * 0.5) * 4}
+           position.z={Math.cos($scrollProgress * 4 + currentTime * 0.5) * 4}
         >
           <LegoHead color="#FFD700" />
         </T.Group>
 
-        <!-- 🆕 BLOCO 3 - Movimento em Z profundo -->
         <T.Group 
           position.z={-15 + $scrollProgress * 25 + Math.sin(currentTime * 0.5) * 1.2} 
           position.x={-5 + Math.cos(currentTime * 0.7) * 0.6} 
@@ -143,17 +133,15 @@
           <LegoBrick geometry={{width: 3, depth: 2, height: 'brick'}} color="#f5c105" scale={0.8} id="s3" />
         </T.Group>
 
-        <!-- 🆕 BLOCO 4 - Órbita complexa -->
         <T.Group 
-          position.y={5 - $scrollProgress * 18 + Math.sin(currentTime * 0.6) * 0.8} 
+           position.y={5 - $scrollProgress * 18 + Math.sin(currentTime * 0.6) * 0.8} 
           position.x={5 + Math.cos(currentTime * 0.8) * 0.7} 
           rotation.x={$scrollProgress * -5 + currentTime * 0.25}
           rotation.y={Math.cos($scrollProgress * 6 + currentTime * 0.4) * 1.2}
         >
           <LegoBrick geometry={{width: 2, depth: 2, height: 'plate'}} color="#FFD700" scale={1.1} id="s4" />
-        </T.Group>
+         </T.Group>
 
-        <!-- 🆕 CABEÇA 2 - Dança lateral -->
         <T.Group 
           position.y={-5 + $scrollProgress * 10 + Math.cos(currentTime * 0.4) * 0.9} 
           position.x={-6 + $scrollProgress * 15 + Math.sin(currentTime * 0.9) * 0.7} 
@@ -163,33 +151,30 @@
           <LegoHead color="#FFD700" scale={0.7} />
         </T.Group>
 
-        <!-- 🆕 BLOCO 5 - Voo em arco -->
         <T.Group 
           position.x={8 + Math.sin(currentTime * 0.7) * 0.6} 
           position.y={4 - $scrollProgress * 20 + Math.cos(currentTime * 0.5) * 0.8} 
-          rotation.y={$scrollProgress * 3 + currentTime * 0.2} 
+           rotation.y={$scrollProgress * 3 + currentTime * 0.2} 
           rotation.z={$scrollProgress * -4 + currentTime * 0.3}
           position.z={Math.cos($scrollProgress * 5 + currentTime * 0.7) * 3}
         >
           <LegoBrick geometry={{width: 6, depth: 2, height: 'plate'}} color="#0055BF" scale={0.9} id="s5" />
         </T.Group>
 
-        <!-- 🆕 BLOCO 6 - Rotação tripla -->
         <T.Group 
           position.z={5 - $scrollProgress * 18 + Math.cos(currentTime * 0.6) * 0.7} 
           position.x={1 + Math.sin(currentTime * 0.8) * 0.9} 
           rotation.x={$scrollProgress * 4 + currentTime * 0.35}
           rotation.y={$scrollProgress * -3 + currentTime * 0.25}
           position.y={Math.cos($scrollProgress * 4 + currentTime * 0.8) * 2}
-        >
+         >
           <LegoBrick geometry={{width: 2, depth: 2, height: 'brick'}} color="#DA291C" scale={0.6} id="s6" />
         </T.Group>
 
-        <!-- 🆕 BLOCOS EXTRAS - Aparecem exclusivamente durante seleção para continuidade -->
         {#if step === 'selection'}
           <T.Group 
             position.x={-8 + Math.sin(currentTime * 0.3) * 1.2} 
-            position.y={6 + Math.cos(currentTime * 0.5) * 0.8} 
+             position.y={6 + Math.cos(currentTime * 0.5) * 0.8} 
             rotation.y={currentTime * 0.4}
             position.z={Math.sin(currentTime * 0.6) * 4}
           >
@@ -197,13 +182,13 @@
           </T.Group>
 
           <T.Group 
-            position.x={10 + Math.cos(currentTime * 0.4) * 0.9} 
+           position.x={10 + Math.cos(currentTime * 0.4) * 0.9} 
             position.y={-7 + Math.sin(currentTime * 0.6) * 1.0} 
             rotation.z={currentTime * 0.3}
             position.z={Math.cos(currentTime * 0.8) * 3}
           >
             <LegoBrick geometry={{width: 4, depth: 1, height: 'plate'}} color="#8B5CF6" scale={0.8} id="s8" />
-          </T.Group>
+           </T.Group>
 
           <T.Group 
             position.x={Math.sin(currentTime * 0.7) * 6} 
@@ -211,15 +196,14 @@
             rotation.x={currentTime * 0.5}
             position.z={-8 + Math.sin(currentTime * 0.9) * 2}
           >
-            <LegoHead color="#F59E0B" scale={0.6} />
+           <LegoHead color="#F59E0B" scale={0.6} />
           </T.Group>
 
-          <!-- 🆕 BLOCOS ADICIONAIS PARA MAIS MOVIMENTO NA SELEÇÃO -->
           <T.Group 
             position.x={-12 + Math.cos(currentTime * 0.6) * 1.5} 
             position.y={Math.sin(currentTime * 0.8) * 4} 
             rotation.y={currentTime * 0.6}
-            position.z={Math.cos(currentTime * 0.4) * 5}
+             position.z={Math.cos(currentTime * 0.4) * 5}
           >
             <LegoBrick geometry={{width: 1, depth: 2, height: 'brick'}} color="#EC4899" scale={0.5} id="s9" />
           </T.Group>
@@ -243,13 +227,12 @@
           </T.Group>
         {/if}
 
-        <!-- 🆕 MINIFIGURE - Aparece mais cedo e fica mais ativo -->
         {#if $scrollProgress > 0.3}
           <T.Group 
             position.y={-3 + $scrollProgress * 16 + Math.sin(currentTime * 0.9) * 0.4} 
             position.x={Math.cos(currentTime * 0.7) * 0.6} 
             rotation.y={$scrollProgress * 8 + currentTime * 0.5}
-            position.z={Math.sin($scrollProgress * 6 + currentTime * 0.8) * 2}
+             position.z={Math.sin($scrollProgress * 6 + currentTime * 0.8) * 2}
           >
             <LegoMinifigure />
           </T.Group>
@@ -257,14 +240,12 @@
       </Canvas>
     </div>
 
-    <!-- Texto inicial clean e elegante -->
     <div class="intro-text" style="opacity: {1 - $scrollProgress * 3}; transform: translateX(-50%) translateY({$scrollProgress * 20}px);">
       <h1 class="genesis-title">Genesis Builder</h1>
       <p class="scroll-instruction">Role para iniciar a construção</p>
     </div>
 
     {#if step === 'selection'}
-      <!-- Tela de seleção com fundo clean -->
       <div class="template-selection" in:fly={{y: 50, duration: 800}}>
         <div class="selection-content">
           <div class="selection-header" in:fly={{y: 30, duration: 600, delay: 200}}>
@@ -287,6 +268,12 @@
               <div class="card-glow"></div>
             </button>
           </div>
+
+          {#if $hasDownloaded}
+            <div class="continue-project" in:fade={{ delay: 600, duration: 500 }}>
+              <a href="/continuar">Ou continue um projeto existente</a>
+            </div>
+          {/if}
         </div>
       </div>
     {/if}
@@ -294,9 +281,7 @@
 
 {:else if step === 'tesseract'}
   <div class="tesseract-container" in:fade>
-    <!-- 🆕 PALETA MODERNA REDESENHADA -->
     <aside class="modern-palette">
-      <!-- Header da Paleta -->
       <div class="palette-header">
         <button class="back-button" on:click={backToSelection}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -311,10 +296,8 @@
         </div>
       </div>
 
-      <!-- Seção de Blocos -->
       <div class="blocks-section">
         {#if $activeTemplate === 'card'}
-          <!-- 🆕 MINIATURAS PARA CARTÃO DE VISITAS -->
           <button 
             class="block-button" 
             class:disabled={$blocks.some(b => b.type === 'Header')}
@@ -322,7 +305,6 @@
             disabled={$blocks.some(b => b.type === 'Header')}
           >
             <div class="block-icon">
-              <!-- Miniatura 2D de bloco LEGO (cabeça) -->
               <svg width="32" height="20" viewBox="0 0 32 20" class="lego-header">
                 <rect x="2" y="6" width="28" height="12" rx="2" fill="#4F46E5"/>
                 <circle cx="8" cy="4" r="2" fill="#6366F1"/>
@@ -337,14 +319,13 @@
 
           <button 
             class="block-button" 
-            class:disabled={$blocks.some(b => b.type === 'ProfileCard')}
+             class:disabled={$blocks.some(b => b.type === 'ProfileCard')}
             on:click={() => addBlock('ProfileCard')} 
             disabled={$blocks.some(b => b.type === 'ProfileCard')}
           >
             <div class="block-icon">
-              <!-- Bonequinho 2D para ProfileCard -->
               <svg width="32" height="32" viewBox="0 0 32 32" class="lego-minifig">
-                <circle cx="16" cy="8" r="6" fill="#FCD34D"/>
+                 <circle cx="16" cy="8" r="6" fill="#FCD34D"/>
                 <rect x="10" y="14" width="12" height="12" rx="2" fill="#DC2626"/>
                 <rect x="12" y="26" width="3" height="4" fill="#1F2937"/>
                 <rect x="17" y="26" width="3" height="4" fill="#1F2937"/>
@@ -363,39 +344,37 @@
             on:click={() => addBlock('LinkList')} 
             disabled={$blocks.some(b => b.type === 'LinkList')}
           >
-            <div class="block-icon">
-              <!-- Miniatura 2D de bloco LEGO (pernas/links) -->
+           <div class="block-icon">
               <svg width="32" height="20" viewBox="0 0 32 20" class="lego-links">
                 <rect x="2" y="2" width="12" height="16" rx="2" fill="#059669"/>
                 <rect x="18" y="2" width="12" height="16" rx="2" fill="#059669"/>
-                <circle cx="5" cy="0" r="1.5" fill="#10B981"/>
+                 <circle cx="5" cy="0" r="1.5" fill="#10B981"/>
                 <circle cx="11" cy="0" r="1.5" fill="#10B981"/>
                 <circle cx="21" cy="0" r="1.5" fill="#10B981"/>
                 <circle cx="27" cy="0" r="1.5" fill="#10B981"/>
               </svg>
             </div>
-            <span>Adicionar Pernas</span>
+             <span>Adicionar Pernas</span>
             <small>Links sociais</small>
           </button>
 
         {:else if $activeTemplate === 'landing'}
-          <!-- 🆕 MINIATURAS PARA LANDING PAGE -->
           <button 
             class="block-button" 
             on:click={() => addBlock('Header')}
-          >
+           >
             <div class="block-icon">
               <svg width="32" height="20" viewBox="0 0 32 20" class="lego-header">
                 <rect x="2" y="6" width="28" height="12" rx="2" fill="#4F46E5"/>
                 <circle cx="8" cy="4" r="2" fill="#6366F1"/>
-                <circle cx="16" cy="4" r="2" fill="#6366F1"/>
+                 <circle cx="16" cy="4" r="2" fill="#6366F1"/>
                 <circle cx="24" cy="4" r="2" fill="#6366F1"/>
                 <rect x="2" y="6" width="28" height="2" fill="#3730A3"/>
               </svg>
             </div>
             <span>Adicionar Cabeçalho</span>
             <small>Título da página</small>
-          </button>
+           </button>
 
           <button 
             class="block-button" 
@@ -403,18 +382,18 @@
           >
             <div class="block-icon">
               <svg width="32" height="20" viewBox="0 0 32 20" class="lego-image">
-                <rect x="2" y="4" width="28" height="14" rx="2" fill="#8B5CF6"/>
+                 <rect x="2" y="4" width="28" height="14" rx="2" fill="#8B5CF6"/>
                 <circle cx="8" cy="2" r="1.5" fill="#A78BFA"/>
                 <circle cx="16" cy="2" r="1.5" fill="#A78BFA"/>
                 <circle cx="24" cy="2" r="1.5" fill="#A78BFA"/>
                 <rect x="6" y="8" width="20" height="6" rx="1" fill="#C4B5FD"/>
-                <circle cx="10" cy="10" r="1" fill="#8B5CF6"/>
+                 <circle cx="10" cy="10" r="1" fill="#8B5CF6"/>
                 <path d="M14 12 L18 8 L22 12" fill="#8B5CF6"/>
               </svg>
             </div>
             <span>Adicionar Imagem</span>
             <small>Foto ou ilustração</small>
-          </button>
+           </button>
 
           <button 
             class="block-button" 
@@ -427,7 +406,7 @@
                 <circle cx="16" cy="2" r="1.5" fill="#FCD34D"/>
                 <circle cx="24" cy="2" r="1.5" fill="#FCD34D"/>
                 <rect x="6" y="8" width="16" height="1.5" fill="#FCD34D"/>
-                <rect x="6" y="11" width="20" height="1.5" fill="#FCD34D"/>
+                 <rect x="6" y="11" width="20" height="1.5" fill="#FCD34D"/>
                 <rect x="6" y="14" width="12" height="1.5" fill="#FCD34D"/>
               </svg>
             </div>
@@ -442,12 +421,12 @@
             <div class="block-icon">
               <svg width="32" height="20" viewBox="0 0 32 20" class="lego-links">
                 <rect x="2" y="2" width="12" height="16" rx="2" fill="#059669"/>
-                <rect x="18" y="2" width="12" height="16" rx="2" fill="#059669"/>
+                 <rect x="18" y="2" width="12" height="16" rx="2" fill="#059669"/>
                 <circle cx="5" cy="0" r="1.5" fill="#10B981"/>
                 <circle cx="11" cy="0" r="1.5" fill="#10B981"/>
                 <circle cx="21" cy="0" r="1.5" fill="#10B981"/>
                 <circle cx="27" cy="0" r="1.5" fill="#10B981"/>
-              </svg>
+               </svg>
             </div>
             <span>Adicionar Links</span>
             <small>Botões de ação</small>
@@ -455,19 +434,17 @@
         {/if}
       </div>
 
-      <!-- Botão de Explorar -->
       {#if ($activeTemplate === 'card' && allBlocksAdded) || ($activeTemplate === 'landing' && $blocks.length > 0)}
         <div class="explore-section">
           <a href="/refinar" class="explore-button">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
               <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM4.5 7.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H4.5Z"/>
-            </svg>
+             </svg>
             Explorar Criação
           </a>
         </div>
       {/if}
 
-      <!-- Contador de Blocos -->
       <div class="block-counter">
         <div class="counter-info">
           <span class="counter-number">{$blocks.length}</span>
@@ -484,7 +461,7 @@
       {#if $activeTemplate === 'card'}
         <T.PerspectiveCamera makeDefault position={[0, 4, 8]}><OrbitControls /></T.PerspectiveCamera>
         <LegoMinifigure {showHead} {showTorso} {showLegs} />
-      {:else if $activeTemplate === 'landing'}
+       {:else if $activeTemplate === 'landing'}
         <T.PerspectiveCamera makeDefault position={[10, 12, 12]}><OrbitControls /></T.PerspectiveCamera>
         {#each processedBlocks as pBlock (pBlock.id)}
           <T.Group on:pointerdown={(e) => { e.stopPropagation(); selectedBlockId.set(pBlock.id); }}>
@@ -498,45 +475,38 @@
 
 <style>
   :global(body) { 
-    font-family: system-ui, sans-serif; 
+    font-family: system-ui, sans-serif;
     margin: 0; 
     background: #f1f1f1; 
   }
-
   .intro-container { 
     position: relative; 
-    width: 100%; 
+    width: 100%;
   }
-
   .scroll-canvas-wrapper { 
     position: fixed; 
     top: 0; 
     left: 0; 
     width: 100%; 
     height: 100vh; 
-    z-index: -1; 
+    z-index: -1;
     transition: opacity 0.5s ease, filter 0.5s ease;
     filter: blur(0px);
   }
-
-  /* 🆕 Efeito especial quando na tela de seleção - mais sutil para não interferir */
   .scroll-canvas-wrapper.selection-mode {
     filter: blur(0.5px);
     animation: lego-drift 25s linear infinite;
   }
-
   .intro-text { 
     position: fixed; 
     top: 40vh; 
-    left: 45%; 
-    transform: translateX(-50%); /* Base transform */
+    left: 45%;
+    transform: translateX(-50%);
     text-align: center; 
     z-index: 10; 
     pointer-events: none; 
-    transition: opacity 0.3s; 
+    transition: opacity 0.3s;
   }
-
-  /* Genesis Builder - Clean e Elegante */
   .genesis-title {
     font-size: 3.5rem;
     font-weight: 900;
@@ -560,8 +530,6 @@
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.02em;
   }
-
-  /* Role para iniciar - Roxo Sutil */
   .scroll-instruction {
     font-size: 1.2rem;
     margin: 0;
@@ -570,11 +538,9 @@
     text-shadow: 0 1px 3px rgba(139, 92, 246, 0.2);
     animation: gentle-pulse 3s ease-in-out infinite;
   }
-
-  /* Tela de seleção clean */
   .template-selection { 
     position: fixed; 
-    top: 0; 
+    top: 0;
     left: 0; 
     width: 100%; 
     height: 100vh; 
@@ -585,7 +551,6 @@
     background: rgba(248, 250, 252, 0.95);
     backdrop-filter: blur(10px);
   }
-
   .selection-content {
     display: flex;
     flex-direction: column;
@@ -595,12 +560,10 @@
     max-width: 1000px;
     padding: 2rem;
   }
-
   .selection-header {
     text-align: center;
     margin-bottom: 3rem;
   }
-
   .selection-title {
     font-size: 2.8rem;
     font-weight: 800;
@@ -611,8 +574,6 @@
     margin: 0 0 1rem 0;
     animation: title-glow 4s ease-in-out infinite;
   }
-
-  /* Subtítulo verde clean */
   .selection-subtitle {
     font-size: 1.2rem;
     margin: 0;
@@ -621,13 +582,11 @@
     text-shadow: 0 1px 3px rgba(5, 150, 105, 0.15);
     animation: subtitle-glow 3s ease-in-out infinite;
   }
-
   .template-cards { 
     display: flex; 
     gap: 2.5rem; 
     perspective: 1000px;
   }
-
   .card { 
     position: relative;
     background: linear-gradient(145deg, 
@@ -640,7 +599,7 @@
     cursor: pointer; 
     width: 300px;
     height: 260px;
-    text-align: center; 
+    text-align: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     backdrop-filter: blur(20px);
     box-shadow: 
@@ -648,7 +607,6 @@
       0 1px 3px rgba(0, 0, 0, 0.05);
     overflow: hidden;
   }
-
   .card::before {
     content: '';
     position: absolute;
@@ -664,11 +622,9 @@
     transition: opacity 0.3s ease;
     border-radius: 1.5rem;
   }
-
   .card:hover::before {
     opacity: 1;
   }
-
   .card:hover { 
     transform: translateY(-8px) scale(1.02);
     border-color: rgba(102, 126, 234, 0.2);
@@ -676,26 +632,22 @@
       0 12px 40px rgba(0, 0, 0, 0.12),
       0 4px 12px rgba(0, 0, 0, 0.08);
   }
-
   .card-business:hover {
     box-shadow: 
       0 12px 40px rgba(245, 87, 108, 0.15),
       0 4px 12px rgba(245, 87, 108, 0.1);
   }
-
   .card-landing:hover {
     box-shadow: 
       0 12px 40px rgba(79, 172, 254, 0.15),
       0 4px 12px rgba(79, 172, 254, 0.1);
   }
-
   .card-icon {
     font-size: 3.5rem;
     margin-bottom: 1rem;
     animation: icon-float 3s ease-in-out infinite;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   }
-
   .card h2 { 
     margin: 0 0 0.75rem 0;
     font-size: 1.6rem;
@@ -704,7 +656,6 @@
     position: relative;
     z-index: 2;
   }
-
   .card p {
     margin: 0;
     color: #718096;
@@ -713,7 +664,6 @@
     position: relative;
     z-index: 2;
   }
-
   .card-glow {
     position: absolute;
     top: 50%;
@@ -727,26 +677,20 @@
     transition: opacity 0.3s ease;
     animation: glow-rotate 6s linear infinite;
   }
-
   .card:hover .card-glow {
     opacity: 1;
   }
-
   .card-business .card-glow {
     background: radial-gradient(circle, rgba(245, 87, 108, 0.1) 0%, transparent 70%);
   }
-
   .card-landing .card-glow {
     background: radial-gradient(circle, rgba(79, 172, 254, 0.1) 0%, transparent 70%);
   }
-
-  /* 🆕 PALETA MODERNA REDESENHADA */
   .tesseract-container { 
     position: relative; 
-    height: 100vh; 
+    height: 100vh;
     width: 100vw; 
   }
-
   .modern-palette {
     position: absolute;
     top: 1.5rem;
@@ -765,12 +709,10 @@
       0 8px 16px rgba(0, 0, 0, 0.05);
     overflow: hidden;
   }
-
   .palette-header {
     padding: 1.5rem 1.5rem 1rem;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   }
-
   .back-button {
     display: flex;
     align-items: center;
@@ -787,34 +729,29 @@
     transition: all 0.2s ease;
     margin-bottom: 1rem;
   }
-
   .back-button:hover {
     background: rgba(107, 114, 128, 0.15);
     border-color: rgba(107, 114, 128, 0.3);
     color: #4b5563;
   }
-
   .palette-title h2 {
     margin: 0 0 0.25rem 0;
     font-size: 1.25rem;
     font-weight: 700;
     color: #1f2937;
   }
-
   .template-type {
     margin: 0;
     font-size: 0.875rem;
     color: #6b7280;
     font-weight: 500;
   }
-
   .blocks-section {
     padding: 1rem 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
   }
-
   .block-button {
     display: flex;
     align-items: center;
@@ -830,7 +767,6 @@
     position: relative;
     overflow: hidden;
   }
-
   .block-button::before {
     content: '';
     position: absolute;
@@ -845,11 +781,9 @@
     opacity: 0;
     transition: opacity 0.2s ease;
   }
-
   .block-button:hover::before {
     opacity: 1;
   }
-
   .block-button:hover {
     transform: translateY(-2px);
     border-color: rgba(99, 102, 241, 0.2);
@@ -857,19 +791,16 @@
       0 8px 20px rgba(0, 0, 0, 0.08),
       0 4px 8px rgba(0, 0, 0, 0.04);
   }
-
   .block-button.disabled {
     background: rgba(107, 114, 128, 0.1);
     border-color: rgba(107, 114, 128, 0.15);
     cursor: not-allowed;
     opacity: 0.6;
   }
-
   .block-button.disabled:hover {
     transform: none;
     box-shadow: none;
   }
-
   .block-icon {
     flex-shrink: 0;
     padding: 0.5rem;
@@ -879,7 +810,6 @@
     position: relative;
     z-index: 1;
   }
-
   .block-button span {
     font-weight: 600;
     color: #1f2937;
@@ -887,7 +817,6 @@
     position: relative;
     z-index: 1;
   }
-
   .block-button small {
     display: block;
     color: #6b7280;
@@ -896,12 +825,10 @@
     position: relative;
     z-index: 1;
   }
-
   .explore-section {
     padding: 1rem 1.5rem;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
   }
-
   .explore-button {
     display: flex;
     align-items: center;
@@ -917,241 +844,126 @@
     transition: all 0.2s ease;
     width: 100%;
   }
-
   .explore-button:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
   }
-
   .block-counter {
     padding: 1rem 1.5rem 1.5rem;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
   }
-
   .counter-info {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     justify-content: center;
   }
-
   .counter-number {
     font-size: 1.5rem;
     font-weight: 700;
     color: #667eea;
   }
-
   .counter-text {
     font-size: 0.875rem;
     color: #6b7280;
     font-weight: 500;
   }
-
-  /* Estilos para as miniaturas SVG */
   .lego-header {
     animation: lego-pulse 2s ease-in-out infinite;
   }
-
   .lego-minifig {
     animation: minifig-wave 3s ease-in-out infinite;
   }
-
   .lego-links {
     animation: links-bounce 2.5s ease-in-out infinite;
   }
-
   .lego-image {
     animation: image-glow 3s ease-in-out infinite;
   }
-
   .lego-text {
     animation: text-write 2s ease-in-out infinite;
   }
-
-  /* Animações sutis e elegantes */
   @keyframes subtle-shimmer {
-    0%, 100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
   }
-
   @keyframes gentle-pulse {
-    0%, 100% {
-      opacity: 0.9;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.01);
-    }
+    0%, 100% { opacity: 0.9; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.01); }
   }
-
   @keyframes title-glow {
-    0%, 100% {
-      filter: brightness(1);
-    }
-    50% {
-      filter: brightness(1.1);
-    }
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.1); }
   }
-
   @keyframes subtitle-glow {
-    0%, 100% {
-      opacity: 0.9;
-    }
-    50% {
-      opacity: 1;
-    }
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 1; }
   }
-
   @keyframes icon-float {
-    0%, 100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-8px);
-    }
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
   }
-
   @keyframes glow-rotate {
-    from {
-      transform: translate(-50%, -50%) rotate(0deg);
-    }
-    to {
-      transform: translate(-50%, -50%) rotate(360deg);
-    }
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
   }
-
-  /* Animações para miniaturas LEGO */
   @keyframes lego-pulse {
-    0%, 100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.05);
-      opacity: 0.9;
-    }
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
   }
-
   @keyframes minifig-wave {
-    0%, 100% {
-      transform: rotate(0deg);
-    }
-    25% {
-      transform: rotate(-5deg);
-    }
-    75% {
-      transform: rotate(5deg);
-    }
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
   }
-
   @keyframes links-bounce {
-    0%, 100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-3px);
-    }
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-3px); }
   }
-
   @keyframes image-glow {
-    0%, 100% {
-      filter: brightness(1);
-    }
-    50% {
-      filter: brightness(1.1);
-    }
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.1); }
   }
-
   @keyframes text-write {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.8;
-    }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
   }
-
-  /* 🆕 Animação de deriva suave para storytelling contínuo */
   @keyframes lego-drift {
-    0% {
-      transform: translateX(0px) translateY(0px);
-    }
-    25% {
-      transform: translateX(5px) translateY(-3px);
-    }
-    50% {
-      transform: translateX(-3px) translateY(5px);
-    }
-    75% {
-      transform: translateX(-5px) translateY(-3px);
-    }
-    100% {
-      transform: translateX(0px) translateY(0px);
-    }
+    0% { transform: translateX(0px) translateY(0px); }
+    25% { transform: translateX(5px) translateY(-3px); }
+    50% { transform: translateX(-3px) translateY(5px); }
+    75% { transform: translateX(-5px) translateY(-3px); }
+    100% { transform: translateX(0px) translateY(0px); }
+  }
+  @media (max-width: 768px) {
+    .genesis-title { font-size: 2.5rem; }
+    .scroll-instruction { font-size: 1.1rem; }
+    .selection-title { font-size: 2.2rem; }
+    .template-cards { flex-direction: column; gap: 2rem; }
+    .card { width: 280px; height: 220px; padding: 2rem 1.5rem; }
+    .card-icon { font-size: 3rem; }
+    .card h2 { font-size: 1.4rem; }
+    .selection-header { margin-bottom: 2rem; }
+    .selection-content { padding: 1rem; }
+    .modern-palette { left: 1rem; right: 1rem; width: auto; }
   }
 
-  /* 
-  🎬 STORYTELLING CONTÍNUO APRIMORADO:
-  - Blocos LEGO voam CONTINUAMENTE durante scroll e seleção
-  - Opacidade reduzida (30%) na tela de seleção mantém continuidade visual
-  - 6 blocos extras aparecem exclusivamente na seleção (mais movimento)
-  - Movimentos 3D complexos com rotações em X, Y, Z
-  - Blur sutil + deriva na tela de seleção para profundidade
-  - Minifigure aparece aos 30% para engajamento precoce
-  - Transição suave entre telas sem quebrar a narrativa visual
-  - Cores variadas (rosa, ciano, vermelho) para mais dinamismo
-  */
-
-  /* Responsividade */
-  @media (max-width: 768px) {
-    .genesis-title {
-      font-size: 2.5rem;
-    }
-    
-    .scroll-instruction {
-      font-size: 1.1rem;
-    }
-
-    .selection-title {
-      font-size: 2.2rem;
-    }
-
-    .template-cards {
-      flex-direction: column;
-      gap: 2rem;
-    }
-
-    .card {
-      width: 280px;
-      height: 220px;
-      padding: 2rem 1.5rem;
-    }
-
-    .card-icon {
-      font-size: 3rem;
-    }
-
-    .card h2 {
-      font-size: 1.4rem;
-    }
-
-    .selection-header {
-      margin-bottom: 2rem;
-    }
-
-    .selection-content {
-      padding: 1rem;
-    }
-
-    .modern-palette {
-      left: 1rem;
-      right: 1rem;
-      width: auto;
-    }
+  /* ✅ NOVO: Estilos para o link de continuar projeto */
+  .continue-project {
+      margin-top: 2.5rem;
+      text-align: center;
+  }
+  .continue-project a {
+      color: #4f46e5;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: background-color 0.2s ease;
+  }
+  .continue-project a:hover {
+      background-color: rgba(79, 70, 229, 0.1);
+      text-decoration: underline;
   }
 </style>

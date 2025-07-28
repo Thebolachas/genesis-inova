@@ -1,4 +1,6 @@
-import { writable, type Writable, get } from 'svelte/store';
+// src/lib/stores.ts
+
+import { writable, type Writable, get, readable } from 'svelte/store';
 import { nanoid } from 'nanoid';
 import { browser } from '$app/environment';
 import { dequal } from 'dequal';
@@ -105,12 +107,10 @@ export const selectedBlockId = createPersistentStore<string | null>('selectedBlo
 export const activeTemplate = createPersistentStore<'card' | 'landing' | null>('activeTemplate', null);
 export const globalStyles = createPersistentStore<GlobalStyles>('globalStyles', { fontFamily: 'Roboto' });
 export const imageFiles = writable<{ [blockId: string]: File }>({});
-
-// 🆕 NOVO: Store para gerenciar tanto blob URLs quanto base64
 export const imageStorage = writable<{ 
   [blockId: string]: { 
-    blobUrl: string,      // Para exibição durante edição
-    base64: string,       // Para download
+    blobUrl: string,
+    base64: string,
     filename: string,
     type: string 
   } 
@@ -167,10 +167,6 @@ export function redo() {
 }
 
 // --- Funções de Blocos ---
-function addImageFile(blockId: string, file: File) {
-    imageFiles.update(files => ({ ...files, [blockId]: file }));
-}
-
 export function resetBlocks() {
   blocksWithHistory.set([]);
   selectedBlockId.set(null);
@@ -199,25 +195,17 @@ export function updateBlockProps(id: string, newProps: Partial<Block['props']>) 
     });
 }
 
-// 🆕 FUNÇÃO CORRIGIDA: Upload de imagem completo
 export function handleImageUpload(event: Event, blockId: string) {
   const input = event.target as HTMLInputElement;
   if (input.files && input.files[0]) {
     const file = input.files[0];
-    
-    // Criar nome único para a imagem
     const fileExtension = file.name.split('.').pop() || 'jpg';
     const filename = `image-${blockId}.${fileExtension}`;
-    
-    // Criar blob URL para exibição imediata
     const blobUrl = URL.createObjectURL(file);
     
-    // Ler arquivo como base64 para download
     const reader = new FileReader();
     reader.onload = (e) => {
       const base64Data = e.target?.result as string;
-      
-      // Armazenar tanto blob URL quanto base64
       imageStorage.update(storage => ({
         ...storage,
         [blockId]: {
@@ -227,16 +215,9 @@ export function handleImageUpload(event: Event, blockId: string) {
           type: file.type
         }
       }));
-      
-      console.log(`📸 Imagem processada: ${filename}`);
     };
-    
     reader.readAsDataURL(file);
-    
-    // Atualizar bloco com blob URL para exibição
-    updateBlockProps(blockId, { 
-      imageUrl: blobUrl 
-    });
+    updateBlockProps(blockId, { imageUrl: blobUrl });
   }
 }
 
@@ -244,7 +225,7 @@ export function handleDndUpdate(event: CustomEvent<{ items: Block[], info: any }
     blocksWithHistory.set(event.detail.items);
 }
 
-// 🆕 SISTEMA DE DOWNLOAD CORRIGIDO
+// --- SISTEMA DE DOWNLOAD ---
 export async function downloadSite() {
   const currentBlocks = get(blocks);
   const currentTemplate = get(activeTemplate);
@@ -255,56 +236,37 @@ export async function downloadSite() {
     return;
   }
 
-  console.log('🚀 Iniciando geração do site...');
-  console.log('📊 Blocos encontrados:', currentBlocks.length);
-  console.log('🖼️ Imagens encontradas:', Object.keys(images).length);
-  
   const zip = new JSZip();
   
-  // 🆕 CORREÇÃO: Verificar se há imagens antes de criar pasta
+  // ✅ NOVO: Adiciona o "DNA" do projeto ao ZIP para permitir a re-edição
+  const projectData = {
+    blocks: currentBlocks,
+    template: currentTemplate,
+  };
+  zip.file('project.json', JSON.stringify(projectData, null, 2));
+
   if (Object.keys(images).length > 0) {
     const imagesFolder = zip.folder('images');
-    
-    // Adicionar todas as imagens ao ZIP
-    for (const [blockId, imageData] of Object.entries(images)) {
+    for (const [, imageData] of Object.entries(images)) {
       if (imagesFolder && imageData.base64) {
-        console.log(`📸 Adicionando imagem: ${imageData.filename}`);
-        try {
-          // Converter base64 para blob, removendo o prefixo
-          const base64Data = imageData.base64.split(',')[1];
-          if (base64Data) {
-            imagesFolder.file(imageData.filename, base64Data, { base64: true });
-            console.log(`✅ Imagem adicionada com sucesso: ${imageData.filename}`);
-          } else {
-            console.error(`❌ Erro: base64 inválido para ${imageData.filename}`);
-          }
-        } catch (error) {
-          console.error(`❌ Erro ao processar imagem ${imageData.filename}:`, error);
+        const base64Data = imageData.base64.split(',')[1];
+        if (base64Data) {
+          imagesFolder.file(imageData.filename, base64Data, { base64: true });
         }
       }
     }
-  } else {
-    console.log('ℹ️ Nenhuma imagem para incluir no ZIP');
   }
   
-  // 🆕 CORREÇÃO: Converter blob URLs para caminhos relativos
   const blocksForDownload = convertBlobUrlsToRelativePaths(currentBlocks, images);
-  console.log('🔄 Blocos convertidos para download:', blocksForDownload);
-  
-  // Gerar HTML e CSS
   const { html, css } = generateSiteFiles(blocksForDownload, currentTemplate);
   
-  // Adicionar arquivos ao ZIP
   zip.file('index.html', html);
   zip.file('style.css', css);
   
-  // Adicionar README com instruções
   const readme = generateReadme();
   zip.file('README.md', readme);
   
-  // Gerar e baixar o ZIP
   try {
-    console.log('📦 Gerando arquivo ZIP...');
     const content = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(content);
     
@@ -314,8 +276,15 @@ export async function downloadSite() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    
     URL.revokeObjectURL(url);
+
+    // ✅ NOVO: Marca no navegador que o usuário já fez um download
+    if (browser) {
+      localStorage.setItem('genesis-has-downloaded', 'true');
+      // Dispara um evento para que a UI em outras abas (se houver) ou na mesma página
+      // possa reagir à mudança de estado.
+      window.dispatchEvent(new Event('storage'));
+    }
     
     console.log('✅ Site baixado com sucesso!');
   } catch (error) {
@@ -324,18 +293,11 @@ export async function downloadSite() {
   }
 }
 
-// 🆕 FUNÇÃO MELHORADA: Converter blob URLs para caminhos relativos
 function convertBlobUrlsToRelativePaths(blocks: Block[], images: Record<string, any>): Block[] {
   return blocks.map(block => {
-    // Verificar se é um bloco que pode ter imagem
     if ((block.type === 'ProfileCard' || block.type === 'ImageBlock') && block.props.imageUrl) {
-      
-      // Encontrar imagem correspondente para este bloco
       const imageData = images[block.id];
-      
-      // Se tem imagem e é blob URL, converter para caminho relativo
       if (imageData && block.props.imageUrl.startsWith('blob:')) {
-        console.log(`🔄 Convertendo blob URL para: ./images/${imageData.filename}`);
         return {
           ...block,
           props: {
@@ -344,23 +306,11 @@ function convertBlobUrlsToRelativePaths(blocks: Block[], images: Record<string, 
           }
         };
       }
-      
-      // Se já é um caminho relativo, manter
-      if (block.props.imageUrl.startsWith('./images/')) {
-        return block;
-      }
-      
-      // Se é URL externa (placeholder), manter
-      if (block.props.imageUrl.startsWith('http')) {
-        return block;
-      }
     }
-    
     return block;
   });
 }
 
-// Gerador de arquivos do site
 function generateSiteFiles(blocks: Block[], template: 'card' | 'landing') {
   if (template === 'card') {
     return generateBusinessCard(blocks);
@@ -424,7 +374,6 @@ function generateLandingPage(blocks: Block[]) {
   return { html, css };
 }
 
-// Geradores de HTML para cada bloco
 function generateHeaderHTML(block: Block) {
   const { titulo, corDeFundo, tituloStyle } = block.props;
   return `<header class="site-header" style="background-color: ${corDeFundo};">
@@ -895,3 +844,26 @@ export function getBlockTypeStats(blocks: Block[]) {
     return stats;
   }, {} as Record<Block['type'], number>);
 }
+
+// ✅ NOVO: Store reativa para saber se o usuário já baixou um projeto
+export const hasDownloaded = readable(false, (set) => {
+  function update() {
+    if (browser) {
+      set(localStorage.getItem('genesis-has-downloaded') === 'true');
+    }
+  }
+
+  if (browser) {
+    // Escuta por mudanças no storage, o que é útil se a flag for setada em outra aba.
+    // O evento que disparamos manualmente também aciona isso.
+    window.addEventListener('storage', update);
+    update(); // Checa o valor inicial quando a store é criada.
+  }
+
+  // Função de cleanup que o Svelte chama quando a store não é mais necessária.
+  return () => {
+    if (browser) {
+      window.removeEventListener('storage', update);
+    }
+  };
+});
